@@ -40,8 +40,12 @@
 <meta property="og:image" content="http://example.com/2022/04/11/hostapd/probe_request.jpg">
 <meta property="og:image" content="http://example.com/2022/04/11/hostapd/auth_request.jpg">
 <meta property="og:image" content="http://example.com/2022/04/11/hostapd/assoc_req.jpg">
+<meta property="og:image" content="http://example.com/2022/04/11/hostapd/4way_message1.jpg">
+<meta property="og:image" content="http://example.com/2022/04/11/hostapd/wpa_ptk_sm.jpg">
+<meta property="og:image" content="http://example.com/2022/04/11/hostapd/wpa_pte_group_sm.jpg">
+<meta property="og:image" content="http://example.com/2022/04/11/hostapd/msg3.jpg">
 <meta property="article:published_time" content="2022-04-11T11:36:58.761Z">
-<meta property="article:modified_time" content="2022-06-10T06:05:21.470Z">
+<meta property="article:modified_time" content="2022-06-11T09:35:20.060Z">
 <meta property="article:author" content="老张同志">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2022/04/11/hostapd/hostapd.png">
@@ -323,7 +327,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2022-06-10 16:05:21" itemprop="dateModified" datetime="2022-06-10T16:05:21+10:00">2022-06-10</time>
+      <time title="修改时间：2022-06-11 19:35:20" itemprop="dateModified" datetime="2022-06-11T19:35:20+10:00">2022-06-11</time>
     </span>
 
   
@@ -1050,7 +1054,56 @@ response。整个过程如下图所示：</p>
 <img src="/2022/04/11/hostapd/assoc_req.jpg" alt="Association Request">
 <figcaption aria-hidden="true">Association Request</figcaption>
 </figure>
-<p>对于Open模式的AP，以上过程完成之后，如果STA成功的接入BSS，则可以进行数据传输了。如果是加密的AP，则需要通过四步握手完成密钥的分发。</p>
+<p>当hostapd收到cfg80211的TX
+status事件之后，如果不需要做4步握手，则此时STA已经成功的接入BSS。否则需要通过四步握手完成密钥的分发。Assoc
+response TX status的处理流程如下图所示：</p>
+<figure>
+<img src="/2022/04/11/hostapd/4way_message1.jpg" alt="Message1 of 4way handshake">
+<figcaption aria-hidden="true">Message1 of 4way handshake</figcaption>
+</figure>
+<p>在处理TX status过程中如果需要启动WPA
+autenticator状态机（<strong>注意：不是所有的Auth算法都需要WPA
+authenticator</strong>），则MLME模块会两次触发状态机进行状态切换。wpa
+authenticator状态机在wpa_auth.c中实现，数据结构struct
+wpa_state_machine用于描述wpa authenticator状态机。从定义中可以看到WPA
+authenticator有两个状态机：WPA_PTK和WPA_PTK_GROUP。为了使用统一的状态机模板，此处STATE_MACHINE_DATA的实例即为struct
+wpa_state_machine。函数wpa_sm_step为状态机的主体。该函数的主体是一个循环，WPA_PTK和WPA_PTK_GROUP两个状态机的状态在循环中不断的迁移，直到某一稳定的状态（sm-&gt;changed、sm-&gt;wpa_auth-&gt;group-&gt;changed均为false）。
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">static int wpa_sm_step(struct wpa_state_machine *sm)</span><br><span class="line">{</span><br><span class="line">	if (!sm)</span><br><span class="line">		return 0;</span><br><span class="line"></span><br><span class="line">	if (sm-&gt;in_step_loop) {</span><br><span class="line">		/* This should not happen, but if it does, make sure we do not</span><br><span class="line">		 * end up freeing the state machine too early by exiting the</span><br><span class="line">		 * recursive call. */</span><br><span class="line">		wpa_printf(MSG_ERROR, "WPA: wpa_sm_step() called recursively");</span><br><span class="line">		return 0;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	sm-&gt;in_step_loop = 1;</span><br><span class="line">	do {</span><br><span class="line">		if (sm-&gt;pending_deinit)</span><br><span class="line">			break;</span><br><span class="line"></span><br><span class="line">		sm-&gt;changed = false;</span><br><span class="line">		sm-&gt;wpa_auth-&gt;group-&gt;changed = false;</span><br><span class="line"></span><br><span class="line">		SM_STEP_RUN(WPA_PTK);</span><br><span class="line">		if (sm-&gt;pending_deinit)</span><br><span class="line">			break;</span><br><span class="line">		SM_STEP_RUN(WPA_PTK_GROUP);</span><br><span class="line">		if (sm-&gt;pending_deinit)</span><br><span class="line">			break;</span><br><span class="line">		wpa_group_sm_step(sm-&gt;wpa_auth, sm-&gt;group);</span><br><span class="line">	} while (sm-&gt;changed || sm-&gt;wpa_auth-&gt;group-&gt;changed);</span><br><span class="line">	sm-&gt;in_step_loop = 0;</span><br><span class="line"></span><br><span class="line">	if (sm-&gt;pending_deinit) {</span><br><span class="line">		wpa_printf(MSG_DEBUG,</span><br><span class="line">			   "WPA: Completing pending STA state machine deinit for "</span><br><span class="line">			   MACSTR, MAC2STR(sm-&gt;addr));</span><br><span class="line">		wpa_free_sta_sm(sm);</span><br><span class="line">		return 1;</span><br><span class="line">	}</span><br><span class="line">	return 0;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+宏SM_STEP_RUN在前文已经介绍过，它调用已定义的step函数（该函数为状态机进入某一状态时，需要执行的操作）。</p>
+<p>WPA_PTK的状态转移在函数SM_STEP(WPA_PTK)中实现。前文已经介绍过宏SM_STEP是用来定义一个函数，这里定义的函数是sm_WPA_PTK_Step(struct
+wpa_state_machine *sm)。该状态机的状态转移如下图所示：</p>
+<figure>
+<img src="/2022/04/11/hostapd/wpa_ptk_sm.jpg" alt="WPA PTK 状态机">
+<figcaption aria-hidden="true">WPA PTK 状态机</figcaption>
+</figure>
+<p>WPA_PTK_GROUP的状态转移在函数SM_STEP(WPA_PTK_GROUP)中实现。这里定义的函数是sm_WPA_PTK_GROUP_Step(struct
+wpa_state_machine *sm)。该状态机的状态转移如下图所示：</p>
+<figure>
+<img src="/2022/04/11/hostapd/wpa_pte_group_sm.jpg" alt="WPA PTK GROUP状态机">
+<figcaption aria-hidden="true">WPA PTK GROUP状态机</figcaption>
+</figure>
+<p>WPA_PTK和WPA_PTK_GROUP两个状态机的状态可以自动转移，也可以在外部事件的作用下转移到指定的状态。第一次是调用wpa_auth_sm_event发送WPA_ASSOC事件，从以上状态转移图中可见该事件并不会触发两个状态机的状态切换。wpa_auth_sta_associated会向状态机发送Init和Auth
+Request。Init事件会使得WPA
+PTK状态机进入INITIALIZE状态，而WPA_PTK_GROUP状态机则进入IDLE状态。WPA_PTK_GROUP不会响应后续的Auth
+Request事件，而WPA_PTK状态机则会由Auth
+Request事件触发一连串的状态迁移。在AUTHENTICATION2状态时，会生成ANonce；在PTKSTART状态发送4步握手的消息一。此时状态机将停留在PTKSTART状态，等待对方发来的4步握手的消息二。</p>
+<p>在message 1/4发送完毕之后，eapol
+authenticator的状态机也需要更新相关的状态。关于eapol
+authenticator状态机，我们将留在后面再介绍。如果长时间没有收到supplicant的message
+2/4，则wpa_send_eapol_timeout会触发，WPA_TPK状态机将再次进入PTKSTART状态并重发发送eapol
+message
+1/4。如果超时次数大于wpa_pairwise_update_count（默认值是4，可以通过配置选项修改）则4步握手以失败告终，而WPA_PTK状态机将转入DISCONNECT状态。当收到message
+2/4之后，WPA_PTK状态机将发生状态迁移。整个过程的代码执行流程如下图：</p>
+<figure>
+<img src="/2022/04/11/hostapd/msg3.jpg" alt="Message 2/4">
+<figcaption aria-hidden="true">Message 2/4</figcaption>
+</figure>
+<p>WPA_PTK状态机状态切换的过程是这样的：在等待message
+2/4时，状态机处于PTKSTART。当收到message
+2/4，状态转为PTKCALCNEGOTIATING，此时需要验证收到的eapol报文，如果报文有误则返回PTKSTART状态，重传message
+1/4；否则进入PTKCALCNEGOTIATING2状态。在PTKCALCNEGOTIATING2状态时，WPA_PTK状态机将超时计数清零，然后转向PTKINITNEGOTIATING状态，在该状态WPA_PTK状态机将发送message
+3/4并转到PTKINITNEGOTIATING状态。WPA_PTK状态机在PTKINITNEGOTIATING状态，将等待message
+4/4，如果一直收不到该消息（超时4次）则转到DISCONNECT状态，如果收到了该消息则转入PTKINITDONE状态，整个4步握手的过程成功完成。</p>
 
     </div>
 
