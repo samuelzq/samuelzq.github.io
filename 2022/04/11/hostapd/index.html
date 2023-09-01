@@ -45,7 +45,7 @@
 <meta property="og:image" content="http://example.com/2022/04/11/hostapd/wpa_pte_group_sm.jpg">
 <meta property="og:image" content="http://example.com/2022/04/11/hostapd/msg3.jpg">
 <meta property="article:published_time" content="2022-04-11T11:36:58.761Z">
-<meta property="article:modified_time" content="2023-09-01T03:07:23.904Z">
+<meta property="article:modified_time" content="2023-09-01T03:45:03.482Z">
 <meta property="article:author" content="老张同志">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2022/04/11/hostapd/hostapd.png">
@@ -327,7 +327,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-09-01 13:07:23" itemprop="dateModified" datetime="2023-09-01T13:07:23+10:00">2023-09-01</time>
+      <time title="修改时间：2023-09-01 13:45:03" itemprop="dateModified" datetime="2023-09-01T13:45:03+10:00">2023-09-01</time>
     </span>
 
   
@@ -395,9 +395,13 @@ file(s)&gt;即为该文件的保存路径。细心的读者可能会注意到这
 <p><strong>配置选项的格式</strong><br>
 选项名 = <em>参数值</em></p>
 <p><strong>ssid</strong><br>
-管理帧中的SSID。参数值的格式可以是： + 不加双引号的字符串 ssid=test +
-加双引号的字符串 ssid=“test” + 以16进制表示的字符串 ssid=74657374 +
-转义字符串 ssid=P“Hello"</p>
+管理帧中的SSID。参数值的格式可以是：</p>
+<ul>
+<li>不加双引号的字符串 ssid=test</li>
+<li>加双引号的字符串 ssid=“test”</li>
+<li>以16进制表示的字符串 ssid=74657374</li>
+<li>转义字符串 ssid=P“Hello\nWorld"</li>
+</ul>
 <p><strong>interface</strong><br>
 如果未在命令行使用参数i指明网络设备，则该配置选项是必需的。它被用于指定在哪个net
 device上创建AP。</p>
@@ -465,26 +469,36 @@ HT40-表示副信道中心频点低于主信道的中心频点，HT40+表示副�
 </tr>
 </tbody>
 </table>
-<p><strong>ieee80211ac</strong><br>
-- 0禁用IEEE 802.11ac (VHT)模式；<br>
-- 1使能IEEE 802.11ac (VHT)模式。<br>
-仅仅将该参数设置为1并不能使能完整的IEEE
+<p><strong>ieee80211ac</strong></p>
+<ul>
+<li>0禁用IEEE 802.11ac (VHT)模式；</li>
+<li>1使能IEEE 802.11ac (VHT)模式。</li>
+</ul>
+<p>仅仅将该参数设置为1并不能使能完整的IEEE
 802.11ac的功能，还要配合其它的参数设置，比如：WMM的相关参数。</p>
 <p><strong>vht_calab</strong><br>
 与ht_capab类似，该参数是一个标识列表，AP所支持的IEEE
 802.11ac新引入的特性由该列表说明。IEEE
 802.11ac新引入了80MHz和160Mhz两种最大带宽，其中160MHz可以是连续的信道，也可以是两个不连续的80MHz信道。因此需要额外的标签对带宽进行说明。VHT160代表连续的160MHz信道，VHT160-80PLUS80代表两个不连续的80Mhz信道拼接成160Mhz信道。如果这两个标签都没有使用，则AP支持的最大带宽是80MHz。</p>
 <p><strong>vht_oper_chwidth</strong><br>
-AP的信道带宽： - 0：20/40 MHz - 1：80 MHz - 2：160 MHz - 3： 80+80
-MHz</p>
+AP的信道带宽：</p>
+<ul>
+<li>0：20/40 MHz</li>
+<li>1：80 MHz</li>
+<li>2：160 MHz</li>
+<li>3： 80+80 MHz</li>
+</ul>
 <p><strong>vht_oper_centr_freq_seg0_idx</strong><br>
 VHT模式下，AP所在信道编号。根据IEEE
 802.11-2020规范，80MHz带宽的信道可以使用的信道编号有42、58、106、122，160MHz带宽的信道可以使用的信道编号有50、114。注意：由于beacon是以20MHz带宽的信号发送，因此在VHT模式下，最多可以有8个20Mhz子信道可供选择。beacon所在信道由参数channel指定，注意该参数的值必须在vht_oper_centr_freq_seg0_idx覆盖的范围之内，否则hostapd将返回错误。</p>
 <p><strong>vht_oper_centr_freq_seg1_idx</strong><br>
 当160 MHz信道是两个不连续的80 MHz信道组成时，该参数指明第二个80
 MHz信道的编号。</p>
-<p><strong>ieee80211ax</strong><br>
-- 0：禁用IEEE 802.11ax (HE)模式 - 1：使能IEEE 802.11ax (HE)模式</p>
+<p><strong>ieee80211ax</strong></p>
+<ul>
+<li><p>0：禁用IEEE 802.11ax (HE)模式</p></li>
+<li><p>1：使能IEEE 802.11ax (HE)模式</p></li>
+</ul>
 <p><strong>he_oper_chwidth</strong><br>
 该配置选项的含义和vht_oper_chwidth一致。</p>
 <p><strong>he_oper_centr_freq_seg0_idx</strong><br>
