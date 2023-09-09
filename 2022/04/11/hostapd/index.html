@@ -1,74 +1,81 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.1.0">
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+	
+	<!-- title -->
+	
+	<title>
+	
+		Hostapd 详解 | 
+	 
+	老张的blog
+	</title>
+	
+	<!-- keywords,description -->
+	 
+
+	<!-- favicon -->
+	
+	<link rel="shortcut icon" href="/favicon.ico">
+	
 
 
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+	<!-- search -->
+	<script>
+		var searchEngine = "https://www.google.com/search?q=";
+		if(typeof searchEngine == "undefined" || searchEngine == null || searchEngine == ""){
+			searchEngine = "https://www.google.com/search?q=";
+		}
+		var homeHost = "wujun234.com";
+		if(typeof homeHost == "undefined" || homeHost == null || homeHost == ""){
+			homeHost = window.location.host;
+		}
+	</script>
 
+
+	
 <link rel="stylesheet" href="/css/main.css">
 
+	
+<link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+
+	
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.17.1/build/styles/darcula.min.css">
+
+	
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" integrity="sha256-DfWjNxDkM94fVBWx1H5BMMp0Zq7luBlV8QRcSES7s+0=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+	
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.11.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+	
+<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
 
-    <meta name="description" content="简介 hostapd 是host access point daemon的缩写。它是运行在用户空间的守护程序。它通常在后台运行，用于将无线网络卡充当访问点（AP），并作为控制身份验证的后端组件。曾经有三个不同版本的hostapd，分别是Jouni Malinen版、OpenBSD版和OWL（ Open Wireless Linux ）版。第三种版本的hostapd未曾有稳定版本发布，目前整">
-<meta property="og:type" content="article">
-<meta property="og:title" content="Hostapd 详解">
-<meta property="og:url" content="http://example.com/2022/04/11/hostapd/index.html">
-<meta property="og:site_name" content="老张的blog">
-<meta property="og:description" content="简介 hostapd 是host access point daemon的缩写。它是运行在用户空间的守护程序。它通常在后台运行，用于将无线网络卡充当访问点（AP），并作为控制身份验证的后端组件。曾经有三个不同版本的hostapd，分别是Jouni Malinen版、OpenBSD版和OWL（ Open Wireless Linux ）版。第三种版本的hostapd未曾有稳定版本发布，目前整">
-<meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/hostapd.png">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/eloop_run.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/data_structure.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/hostapd_driver_init.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/setup_interface.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/channel2freq.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/hostapd_select_hw_mode.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/acs_offload.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/hostapd_handle_dfs.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/wifi_assoc_4wayhandshake.png">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/probe_request.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/auth_request.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/assoc_req.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/4way_message1.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/wpa_ptk_sm.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/wpa_pte_group_sm.jpg">
-<meta property="og:image" content="http://example.com/2022/04/11/hostapd/msg3.jpg">
-<meta property="article:published_time" content="2022-04-11T11:36:58.761Z">
-<meta property="article:modified_time" content="2023-09-01T03:45:03.482Z">
-<meta property="article:author" content="老张同志">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/2022/04/11/hostapd/hostapd.png">
+	
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.17.1/build/highlight.min.js"></script>
+
+	
+<script src="https://cdn.jsdelivr.net/npm/jquery-pjax@2.0.1/jquery.pjax.min.js"></script>
+
+	
+<script src="/js/main.js"></script>
 
 
-<link rel="canonical" href="http://example.com/2022/04/11/hostapd/">
+	
+		
+<script src="https://cdn.jsdelivr.net/npm/leancloud-storage/dist/av-min.js"></script>
 
+		
+<script src="https://cdn.jsdelivr.net/npm/valine@v1.5.1/dist/Valine.min.js"></script>
 
+	
+	
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2022/04/11/hostapd/","path":"2022/04/11/hostapd/","title":"Hostapd 详解"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Hostapd 详解 | 老张的blog</title>
-  
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-<style>mjx-container[jax="SVG"] {
+<meta name="generator" content="Hexo 6.1.0"><style>mjx-container[jax="SVG"] {
   direction: ltr;
 }
 
@@ -182,165 +189,99 @@ mjx-container[display="true"] + br {
 }
 </style></head>
 
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
+<body>
+	<header id="header">
+    <a id="title" href="/" class="logo">老张的blog</a>
 
-  <main class="main">
-    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="切换导航栏" role="button">
-    </div>
-  </div>
+	<ul id="menu">
+    
 
-  <div class="site-meta">
+    
 
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">老张的blog</p>
-      <i class="logo-line"></i>
-    </a>
-  </div>
+    
 
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger">
-    </div>
-  </div>
-</div>
-
-
-
-
-
-
-
-</div>
-        
+    
+      
+      
+        <li class="menu-item">
+          <a href='https://github.com/wujun234/hexo-theme-tree' class="menu-item-link" target="_blank">
+            Tree
+          </a>
+        </li>
+      
+        <li class="menu-item">
+          <a href='https://github.com/wujun234/uid-generator-spring-boot-starter' class="menu-item-link" target="_blank">
+            UidGenerator
+          </a>
+        </li>
+      
+    
   
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          文章目录
-        </li>
-        <li class="sidebar-nav-overview">
-          站点概览
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8hostapd"><span class="nav-number">2.</span> <span class="nav-text">如何使用hostapd</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%B5%8B%E8%AE%BE%E5%A4%87%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81ap%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.1.</span> <span class="nav-text">检测设备是否支持AP模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E6%A8%A1%E6%8B%9F%E6%97%A0%E7%BA%BF%E7%BD%91%E5%8D%A1"><span class="nav-number">2.2.</span> <span class="nav-text">加载模拟无线网卡</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8Chostapd"><span class="nav-number">2.3.</span> <span class="nav-text">运行hostapd</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%B8%AD%E7%9A%84%E9%85%8D%E7%BD%AE%E9%80%89%E9%A1%B9"><span class="nav-number">2.4.</span> <span class="nav-text">配置文件中的配置选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8Chostapd_cli"><span class="nav-number">2.5.</span> <span class="nav-text">运行hostapd_cli</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hostapd-%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">hostapd 源代码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">3.1.</span> <span class="nav-text">获取源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%9B%AE%E5%BD%95"><span class="nav-number">3.2.</span> <span class="nav-text">代码目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hostapd%E8%BD%AF%E4%BB%B6%E6%9E%B6%E6%9E%84"><span class="nav-number">3.3.</span> <span class="nav-text">hostapd软件架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E4%BB%A3%E7%A0%81"><span class="nav-number">3.4.</span> <span class="nav-text">编译代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E8%AF%A6%E8%A7%A3"><span class="nav-number">4.</span> <span class="nav-text">代码详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#eloop"><span class="nav-number">4.1.</span> <span class="nav-text">eloop</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#signals"><span class="nav-number">4.1.1.</span> <span class="nav-text">Signals</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#time_out"><span class="nav-number">4.1.2.</span> <span class="nav-text">Time_out</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#socket"><span class="nav-number">4.1.3.</span> <span class="nav-text">Socket</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#eloop_init"><span class="nav-number">4.1.4.</span> <span class="nav-text">eloop_init</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#eloop_run"><span class="nav-number">4.1.5.</span> <span class="nav-text">eloop_run</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#state-machine"><span class="nav-number">4.2.</span> <span class="nav-text">state machine</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#main"><span class="nav-number">4.3.</span> <span class="nav-text">main()</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">4.3.1.</span> <span class="nav-text">重要的数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.3.2.</span> <span class="nav-text">全局接口</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hostapd_reload_config"><span class="nav-number">4.3.2.1.</span> <span class="nav-text">hostapd_reload_config</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hostapd_for_each_interface"><span class="nav-number">4.3.2.2.</span> <span class="nav-text">hostapd_for_each_interface</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hostapd_ctrl_iface_init"><span class="nav-number">4.3.2.3.</span> <span class="nav-text">hostapd_ctrl_iface_init</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hostapd_ctrl_iface_deinit"><span class="nav-number">4.3.2.4.</span> <span class="nav-text">hostapd_ctrl_iface_deinit</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hostapd_driver_init"><span class="nav-number">4.3.2.5.</span> <span class="nav-text">hostapd_driver_init</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%8E%A5%E5%8F%A3%E6%95%B0%E9%87%8F"><span class="nav-number">4.3.3.</span> <span class="nav-text">计算接口数量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">4.3.4.</span> <span class="nav-text">全局初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E7%BD%91%E7%BB%9C%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.3.5.</span> <span class="nav-text">初始化网络接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96bss"><span class="nav-number">4.3.6.</span> <span class="nav-text">初始化BSS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E8%83%BD%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.3.7.</span> <span class="nav-text"> 使能接口 </span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8hostapd"><span class="nav-number">4.3.8.</span> <span class="nav-text">启动hostapd</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E8%83%BD%E6%8E%A5%E5%8F%A3-1"><span class="nav-number">4.4.</span> <span class="nav-text">使能接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A9%B1%E5%8A%A8%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">4.4.1.</span> <span class="nav-text">驱动初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8aphostapd_setup_interface"><span class="nav-number">4.4.2.</span> <span class="nav-text">启动AP（hostapd_setup_interface）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#acs"><span class="nav-number">4.4.3.</span> <span class="nav-text">ACS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dfs"><span class="nav-number">4.4.4.</span> <span class="nav-text">DFS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#beacon-update"><span class="nav-number">4.4.5.</span> <span class="nav-text">beacon update</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ctrl-interface"><span class="nav-number">4.5.</span> <span class="nav-text">ctrl interface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%8E%A5%E5%85%A5"><span class="nav-number">4.6.</span> <span class="nav-text">设备接入</span></a></li></ol></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">老张同志</p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap site-overview-item animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">1</span>
-          <span class="site-state-item-name">日志</span>
+    
+      <li class="menu-item">
+        <a href='https://github.com/wujun234' class="menu-item-link" target="_blank">
+          <i class="fa fa-github fa-2x"></i>
         </a>
-      </div>
-  </nav>
+      </li>
+    
+	</ul>
+</header>
+
+	
+<div id="sidebar">
+	<button id="sidebar-toggle" class="toggle" ><i class="fa fa-arrow-right " aria-hidden="true"></i></button>
+	
+	<div id="site-toc">
+		<input id="search-input" class="search-input" type="search" placeholder="按回车全站搜索">
+		<div id="tree">
+			
+
+			
+							<ul>
+								<li class="file active">
+									<a href="/2022/04/11/hostapd/">
+                     
+										    Hostapd 详解
+                     
+									</a>
+								</li>
+								<div class="article-toc" style="display: none;"></div>
+							</ul>
+			
+		</div>
+	</div>
 </div>
 
+	<!-- 引入正文 -->
+	<div id="content">
+		<h1 id="article-title">
+	Hostapd 详解
+</h1>
 
+<!-- meta -->
+<div class="article-meta">
+	
 
-        </div>
-      </div>
-    </div>
-  </aside>
-  <div class="sidebar-dimmer"></div>
+	<span>老张同志</span>
+	<span>2022-04-11 21:36:58</span>
 
-
-    </header>
+  <div id="article-categories">
+    
+		  <span>Categories：</span>
+      
+    
 
     
-  <div class="back-to-top" role="button" aria-label="返回顶部">
-    <i class="fa fa-arrow-up"></i>
-    <span>0%</span>
+		    <span>Tags：</span>
+        
+    
   </div>
 
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/11/hostapd/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="老张同志">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="老张的blog">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="Hostapd 详解 | 老张的blog">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          Hostapd 详解
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2022-04-11 21:36:58" itemprop="dateCreated datePublished" datetime="2022-04-11T21:36:58+10:00">2022-04-11</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-09-01 13:45:03" itemprop="dateModified" datetime="2023-09-01T13:45:03+10:00">2023-09-01</time>
-    </span>
-
-  
 </div>
 
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-        <h1 id="简介">简介</h1>
+<!-- content -->
+<div id="article-content">
+	<h1 id="简介">简介</h1>
 <p>hostapd 是host access point
 daemon的缩写。它是运行在用户空间的守护程序。它通常在后台运行，用于将无线网络卡充当访问点（AP），并作为控制身份验证的后端组件。曾经有三个不同版本的hostapd，分别是Jouni
 Malinen版、OpenBSD版和OWL（ Open Wireless Linux
@@ -1103,67 +1044,53 @@ counter是正确的，则状态转为PTKCALCNEGOTIATING。此时需要验证收�
 4/4，如果一直收不到该消息（超时4次）则转到DISCONNECT状态，如果收到了该消息则转入PTKINITDONE状态，在该状态下install
 key，整个4步握手的过程成功完成。</p>
 
+</div>
+
+<!-- post-guide -->
+
+    <div class="post-guide">
+        <div class="item left">
+            
+        </div>
+        <div class="item right">
+            
+        </div>
     </div>
 
-    
-    
-    
 
-    <footer class="post-footer">
+<!-- comment - giscus -->
 
-        
 
-    </footer>
-  </article>
+<!-- comment - valine -->
+
+
+<script>
+	
+	
+</script>
+	</div>
+	<div id="footer">
+	<p>
+	©<span id="footerYear-start"></span>-<span id="footerYear-end"></span>
+	<a href="/">老张同志</a> 
+	
+	
+	<br>
+	Theme <a href="//github.com/wujun234/hexo-theme-tree" target="_blank">Tree</a>
+	by <a href="//github.com/wujun234" target="_blank">WuJun</a>
+	Powered by <a href="//hexo.io" target="_blank">Hexo</a>
+	</p>
 </div>
 
 
+<script type="text/javascript">
+	document.getElementById('footerYear-start').innerHTML = new Date().getFullYear() + '';
+</script>
 
+<script type="text/javascript">
+	document.getElementById('footerYear-end').innerHTML = new Date().getFullYear() + '';
+</script>
 
-
-
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-
-<div class="copyright">
-  &copy; 
-  <span itemprop="copyrightYear">2023</span>
-  <span class="with-love">
-    <i class="fa fa-heart"></i>
-  </span>
-  <span class="author" itemprop="copyrightHolder">老张同志</span>
-</div>
-  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
-
-  
-
-
-
-
-
-  
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdn.jsdelivr.net/npm/mathjax@3.2.0/es5/tex-mml-chtml.js","integrity":"sha256-r+3itOMtGGjap0x+10hu6jW/gZCzxHsoKrOd7gyRSGY="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
-
+	<button id="totop-toggle" class="toggle"><i class="fa fa-angle-double-up" aria-hidden="true"></i></button>
 </body>
 </html>
